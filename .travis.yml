@@ -1,0 +1,39 @@
+language: go
+sudo: false
+matrix:
+  include:
+    - go: 1.x
+      env: LATEST=true
+    - go: 1.9.X
+    - go: 1.10.X
+    - go: 1.11.X
+  allow_failures:
+    - go: tip
+
+before_install:
+  - go get github.com/mitchellh/gox
+
+install:
+  - # skip
+
+script:
+  - go get -t -v ./...
+  - diff -u <(echo -n) <(gofmt -d .)
+  - go vet $(go list ./... | grep -v /vendor/)
+  - go test -v -race ./...
+  # Only build binaries from the latest Go release.
+  - if [ "${LATEST}" = "true" ]; then gox -os="linux darwin windows" -arch="amd64" -output="logshare.." -ldflags "-X main.Rev=`git rev-parse --short HEAD`" -verbose ./...; fi
+
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: ZIua+MN5fEGUKtFGetT8IMYqW5DwtEqEYrm7nIJ4r5N0nAIPb39ucD22sT8jjxH7INT6s+OcMnOCcrsODAPott1ePegmOo9muJxpgLWZ9VK/7BCh6vYdx/W5GxgUEccJFdGsDysoXO+SItCKg8MeyeRlhsDGzTkAtZ7Vu7RQUyMQNlwpg8NrIHAbnDWTbBlWSUXQrDO+2gf86N33wvyBKfYSA0lMPeAyl8BX76ihg/6CEsr6RjzS3ZQHdfKr67C5vksFFkRj5D7i7/ElQxWZbNxSv+zmCNfpDbDrLFAYGTT93+qBNxzIN4eHuBNOWrQxQIOWX6IDle2zx4bQan+j3A0INsGI22S/ngJvyQI/SdX/thSzM4jVtJNxXy1mvV+Fgt3lKBCQCd9lKiNiSUBax4FCasS8qsLc+0tHVD9mU/dEcrgZGt1OnniPgmfoMe6pFtfFNjzs8LUMFXzuinlI0/n5oPlM29f3H0+fEv3ysZHo4OpPd+tLcdfZKLTgtC/SK00uf6BJxOrEiXA/AqAlUWJb7/VIazlYJ1Azv7AJyVZCtS7TWZiink+IWTrkU1miEqNuIq+vNdTpz63Vh3XyLKJyesNfu0k8/2pGvgn3w46KLyX0RIP+WQ1zvtopGi1IWlmPVWnXLvh7s6JTG/0nY9xlbdUnOv2m0CyNrZKkqMA=
+  file:
+    - beermate.linux.amd64
+    - beermate.darwin.amd64
+    - beermate.windows.amd64.exe
+  on:
+    repo: jharrington22/beermate
+    tags: true
+    condition: $LATEST = true
